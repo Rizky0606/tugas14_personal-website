@@ -42,28 +42,23 @@ const testimonial = (req, res) => {
 };
 
 const addBlog = async (req, res) => {
-  const {
-    inputName,
-    dateStart,
-    dateEnd,
-    techNode,
-    techGolang,
-    techReact,
-    techJavascript,
-    inputDescription,
-  } = req.body;
-  const postAt = new Date();
+  try {
+    const { inputName, dateStart, dateEnd, inputDescription } = req.body;
+    const postAt = new Date();
 
-  const query = `INSERT INTO "Blogs" (title, content, author, duration, "startDate", "endDate", image, "postAt", "fullTime", technologies) VALUES ('${inputName}', '${inputDescription}', 'Rizky Fauzi Ardiansyah', '${duration(
-    dateStart,
-    dateEnd
-  )}', '${dateStart}', '${dateEnd}', 'https://www.howtopython.org/wp-content/uploads/2020/04/laptops_python-1170x780.jpg', NOW(), '${getFullTime(
-    postAt
-  )}', ARRAY[true, true, false, false])`;
+    const query = `INSERT INTO "Blogs" (title, content, author, duration, "startDate", "endDate", image, "postAt", "fullTime", technologies) VALUES ('${inputName}', '${inputDescription}', 'Rizky Fauzi Ardiansyah', '${duration(
+      dateStart,
+      dateEnd
+    )}', '${dateStart}', '${dateEnd}', 'https://www.howtopython.org/wp-content/uploads/2020/04/laptops_python-1170x780.jpg', NOW(), '${getFullTime(
+      postAt
+    )}', ARRAY[true, true, false, false])`;
 
-  await sequelize.query(query);
+    await sequelize.query(query);
 
-  res.redirect("/");
+    res.redirect("/");
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const detailBlog = async (req, res) => {
@@ -83,52 +78,51 @@ const detailBlog = async (req, res) => {
 };
 
 const deleteBlog = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const query = `DELETE FROM "Blogs" WHERE id=${id}`;
-  await sequelize.query(query);
-  res.redirect("/");
+    const query = `DELETE FROM "Blogs" WHERE id=${id}`;
+    await sequelize.query(query);
+    res.redirect("/");
+  } catch (error) {
+    console.log(error);
+  }
 };
 
-const editBlog = (req, res) => {
-  const { id } = req.params;
-  res.render("editBlog", { data: dataBlog[id] });
+const editBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `SELECT * FROM "Blogs" WHERE id=${id}`;
+    let obj = await sequelize.query(query, { type: QueryTypes.SELECT });
+
+    const data = obj.map((datas) => ({
+      ...datas,
+    }));
+    res.render("editBlog", { data: data[0] });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const updateBlog = (req, res) => {
-  const { id } = req.params;
-  const projectIndex = dataBlog.findIndex((project) => project.id === id);
-  const {
-    inputName,
-    inputStartDate,
-    inputEndDate,
-    techNode,
-    techGolang,
-    techReact,
-    techJavascript,
-    inputDescription,
-  } = req.body;
-  const dateNow = new Date();
-  const data = {
-    title: inputName,
-    startDate: inputStartDate,
-    endDate: inputEndDate,
-    duration: duration(inputStartDate, inputEndDate),
-    content: inputDescription,
-    inputNode: techNode,
-    inputGolang: techGolang,
-    inputReact: techReact,
-    inputJavascript: techJavascript,
-    fullTime: getFullTime(dateNow),
-    author: "Rizky Fauzi Ardiansyah",
-    postAt: new Date(),
-    image:
-      "https://cms.dailysocial.id/wp-content/uploads/2022/10/arpad-czapp-H424WdcQN4Y-unsplash-scaled.jpg",
-  };
-  dataBlog.push(data);
-  res.redirect("/");
-  // delete data
-  dataBlog.splice(projectIndex, 1);
+  try {
+    const { id } = req.params;
+    const { inputName, inputStartDate, inputEndDate, inputDescription } =
+      req.body;
+    const dateNow = new Date();
+
+    const query = `UPDATE "Blogs" SET title='${inputName}', content='${inputDescription}', author='Rizky Fauzi Ardiansyah', duration='${duration(
+      inputStartDate,
+      inputEndDate
+    )} ', "startDate"='${inputStartDate}', "endDate"='${inputEndDate}', image='https://cms.dailysocial.id/wp-content/uploads/2022/10/arpad-czapp-H424WdcQN4Y-unsplash-scaled.jpg', "postAt"=NOW(), "fullTime"='${getFullTime(
+      dateNow
+    )}' WHERE id=${id}`;
+    sequelize.query(query);
+
+    res.redirect("/");
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 //
@@ -251,12 +245,16 @@ app.get("/blog", blog);
 app.get("/contact", contact);
 app.get("/testimonial", testimonial);
 app.get("/blogDetail/:id", detailBlog);
-app.get("/deleteBlog/:id", deleteBlog);
 app.get("/editBlog/:id", editBlog);
 
 // post
 app.post("/blog", addBlog);
-app.post("/editBlog", updateBlog);
+
+// put
+app.post("/editBlog/:id", updateBlog);
+
+// delete
+app.get("/deleteBlog/:id", deleteBlog);
 
 // local server
 app.listen(PORT, () => {
